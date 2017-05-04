@@ -49,8 +49,9 @@ func (rt ResponseType) Error(err interface{}, status int) {
 	}
 
 	if err := rt.Encode(struct {
-		Error string `json:"error" xml:"error"`
-	}{fmt.Sprintf("%s", err)}); err != nil {
+		XMLName xml.Name `json:"-" xml:"error"`
+		Error   string   `json:"error" xml:"message"`
+	}{Error: fmt.Sprintf("%s", err)}); err != nil {
 		log.Error("unable to write json to client: " + err.Error())
 	}
 }
