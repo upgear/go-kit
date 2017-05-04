@@ -18,15 +18,15 @@ type ResponseType struct {
 	w           http.ResponseWriter
 }
 
-func FromAccept(w http.ResponseWriter, accept string) ResponseType {
+func NewResponseType(w http.ResponseWriter, r *http.Request) ResponseType {
+	return rtFromAccept(w, r.Header.Get("Accept"))
+}
+
+func rtFromAccept(w http.ResponseWriter, accept string) ResponseType {
 	if strings.Contains(accept, "xml") {
 		return ResponseType{"application/xml", xml.NewEncoder(w).Encode, w}
 	}
 	return ResponseType{"application/json", json.NewEncoder(w).Encode, w}
-}
-
-func FromRequest(w http.ResponseWriter, r *http.Request) ResponseType {
-	return FromAccept(w, r.Header.Get("Accept"))
 }
 
 func (rt ResponseType) WriteHeader(status int) {

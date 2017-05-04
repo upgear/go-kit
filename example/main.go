@@ -22,13 +22,16 @@ func main() {
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
-	rt := web.FromRequest(w, r)
+	rt := web.NewResponseType(w, r)
 
 	switch r.URL.Path {
 	case "/400":
+		// This 4XX message will be logged and sent to the client
 		rt.Error("ut oh", http.StatusBadRequest)
 		return
 	case "/500":
+		// This 5XX message will be logged but a generic message will be sent
+		// to the client
 		rt.Error("ohhhh noooo", http.StatusInternalServerError)
 		return
 	default:
