@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/xml"
+	"errors"
 	"net/http"
 	"os"
 
-	"github.com/upgear/gokit/log"
-	"github.com/upgear/gokit/web"
+	"github.com/upgear/go-kit/log"
+	"github.com/upgear/go-kit/web"
 )
 
 func main() {
@@ -15,28 +16,27 @@ func main() {
 		port = "8080"
 	}
 
-	log.Info("listening for http traffic", log.KV{"port": port})
+	log.Info("listening for http traffic", log.M{"port": port})
 	log.Fatal(http.ListenAndServe(":"+port,
 		web.Logger(http.HandlerFunc(handle)),
 	))
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
-	rt := web.NewResponseType(w, r)
+	res := web.NewResponse(w, r)
 
 	switch r.URL.Path {
 	case "/400":
 		// This 4XX message will be logged and sent to the client
-		rt.Error("ut oh", http.StatusBadRequest)
+		res.SendErr(http.StatusBadRequest, errors.New("ut oh"))
 		return
 	case "/500":
 		// This 5XX message will be logged but a generic message will be sent
 		// to the client
-		rt.Error("ohhhh noooo", http.StatusInternalServerError)
+		res.SendErr(http.StatusInternalServerError, errors.New("ohhhh noooo"))
 		return
 	default:
-		rt.WriteHeader(http.StatusOK)
-		rt.Encode(struct {
+		res.Send(http.StatusOK, struct {
 			XMLName xml.Name `json:"-" xml:"response"`
 			FooBar  string   `json:"foo" xml:"bar"`
 		}{FooBar: "it is all 200 ok"})

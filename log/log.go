@@ -31,9 +31,10 @@ func init() {
 	log.SetFlags(0)
 }
 
-type KV map[string]interface{}
+// M is a convenience map type to prevent more typing (pun intended)
+type M map[string]interface{}
 
-func (kv KV) String() string {
+func (kv M) String() string {
 	var s string
 	for k, v := range kv {
 		s = fmt.Sprintf("%s %s", s, kvToString(k, v))
@@ -80,46 +81,46 @@ func stringToLevel(s string) Level {
 	}
 }
 
-func Debug(msg interface{}, kvs ...KV) {
+func Debug(msg interface{}, kvs ...M) {
 	if globalLevel >= LevelDebug {
 		prnt(LevelDebug, msg, kvs...)
 	}
 }
 
-func Info(msg interface{}, kvs ...KV) {
+func Info(msg interface{}, kvs ...M) {
 	if globalLevel >= LevelInfo {
 		prnt(LevelInfo, msg, kvs...)
 
 	}
 }
 
-func Warn(msg interface{}, kvs ...KV) {
+func Warn(msg interface{}, kvs ...M) {
 	if globalLevel >= LevelWarn {
 		prnt(LevelWarn, msg, kvs...)
 	}
 }
 
-func Error(msg interface{}, kvs ...KV) {
+func Error(msg interface{}, kvs ...M) {
 	if globalLevel >= LevelError {
 		prnt(LevelError, msg, kvs...)
 	}
 }
 
-func Fatal(msg interface{}, kvs ...KV) {
+func Fatal(msg interface{}, kvs ...M) {
 	if globalLevel >= LevelFatal {
 		prnt(LevelFatal, msg, kvs...)
 		os.Exit(1)
 	}
 }
 
-func Panic(msg interface{}, kvs ...KV) {
+func Panic(msg interface{}, kvs ...M) {
 	if globalLevel >= LevelPanic {
 		prnt(LevelPanic, msg, kvs...)
 		panic(msg)
 	}
 }
 
-func prnt(lvl Level, msg interface{}, kvs ...KV) {
+func prnt(lvl Level, msg interface{}, kvs ...M) {
 	var kvStr string
 	for _, kv := range kvs {
 		kvStr = kvStr + kv.String()

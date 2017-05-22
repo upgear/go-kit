@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/upgear/gokit/log"
+	"github.com/upgear/go-kit/log"
 )
 
 type statusWriter struct {
@@ -25,7 +25,7 @@ func Logger(next http.Handler) http.Handler {
 		// ResponseWriter.WriteHeader
 		next.ServeHTTP(&sw, r)
 
-		kvs := log.KV{"method": r.Method, "path": r.URL.Path, "status": sw.status}
+		kvs := log.M{"method": r.Method, "path": r.URL.Path, "status": sw.status}
 		const msg = "served request"
 		if sw.status >= 500 {
 			log.Error(msg, kvs)
