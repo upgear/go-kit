@@ -29,12 +29,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	case "/400":
 		// This 4XX message will be logged and sent to the client
 		res.SendErr(http.StatusBadRequest, errors.New("ut oh"))
-		return
 	case "/500":
 		// This 5XX message will be logged but a generic message will be sent
 		// to the client
 		res.SendErr(http.StatusInternalServerError, errors.New("ohhhh noooo"))
-		return
 	default:
 		res.Send(http.StatusOK, struct {
 			XMLName xml.Name `json:"-" xml:"response"`
