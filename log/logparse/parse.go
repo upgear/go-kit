@@ -3,7 +3,7 @@ package logparse
 import (
 	"time"
 
-	"github.com/upgear/gokit/log"
+	"github.com/upgear/go-kit/log"
 )
 
 type Line struct {
