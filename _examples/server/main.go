@@ -34,9 +34,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		// to the client
 		res.SendErr(http.StatusInternalServerError, errors.New("ohhhh noooo"))
 	default:
-		res.Send(http.StatusOK, struct {
+		type body struct {
 			XMLName xml.Name `json:"-" xml:"response"`
 			FooBar  string   `json:"foo" xml:"bar"`
-		}{FooBar: "it is all 200 ok"})
+		}
+		// Serialize the struct to JSON or XML based on the `Accept` header
+		res.Send(http.StatusOK, body{FooBar: "it is all 200 ok"})
 	}
 }
