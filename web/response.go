@@ -3,7 +3,6 @@ package web
 import (
 	"encoding/json"
 	"encoding/xml"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -41,12 +40,11 @@ func init() {
 	}
 }
 
-type newEncoderFunc func(io.Reader) encoder
-
 type encoder interface {
 	Encode(interface{}) error
 }
 
+// Response wraps an http.ResponseWriter and handles content-type encoding.
 type Response struct {
 	ContentType string
 
@@ -55,6 +53,8 @@ type Response struct {
 	encoder
 }
 
+// NewResponse looks at the `Accept` header and returns an appropriate Response
+// struct.
 func NewResponse(w http.ResponseWriter, r *http.Request) Response {
 	ct, enc := fromAccept(w, r.Header.Get("Accept"))
 	return Response{
@@ -78,13 +78,16 @@ func fromAccept(w http.ResponseWriter, accept string) (string, encoder) {
 	}
 }
 
+// WriteHeader sets the correct `Content-Type` header and writes a status
+// code. All other headers should be set before calling this func.
 func (res Response) WriteHeader(status int) {
 	res.w.Header().Set("Content-Type", res.ContentType)
 	res.w.WriteHeader(status)
 }
 
+// Send calls WriteHeader and serializes an interface using the determined
+// `Content-Type`.
 func (res Response) Send(status int, x interface{}) {
-	res.w.Header().Set("Content-Type", res.ContentType)
 	res.w.WriteHeader(status)
 
 	if err := res.Encode(x); err != nil {
@@ -92,6 +95,8 @@ func (res Response) Send(status int, x interface{}) {
 	}
 }
 
+// SendErr writes a standardized error struct. For 5XX errors, the message sent
+// across the wire will be generic while the real error message is logged.
 func (res Response) SendErr(status int, err error) {
 	if status >= 500 {
 		// Override outgoing message as to not display internal errors externally

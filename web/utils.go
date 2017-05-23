@@ -8,6 +8,8 @@ import (
 
 var ipRegex = regexp.MustCompile(`^([\.0-9]+):\d+$`)
 
+// ClientIP attempts to grab an IP address from the `X-Forwarded-For` header
+// or the remote address. It is possible that an empty string can be returned.
 func ClientIP(r *http.Request) string {
 	var ip string
 	// Try to set via forward header
