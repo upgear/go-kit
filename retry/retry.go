@@ -1,3 +1,7 @@
+// Package retry implements basic helpers for implementing retry policies.
+//
+// If you are looking to implement a retry policy in an http client, take a
+// look at the web package.
 package retry
 
 import "time"

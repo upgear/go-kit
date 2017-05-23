@@ -7,7 +7,7 @@ import (
 	"github.com/upgear/go-kit/web"
 )
 
-func Example_Redo() {
+func Example_redo() {
 	req, err := http.NewRequest("GET", "https://golang.org", nil)
 	if err != nil {
 		log.Fatal(err)

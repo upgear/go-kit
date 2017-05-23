@@ -1,3 +1,9 @@
+// Package log aims to provide simple structured logging.
+//
+// The focus is on ease of use over performance.
+//
+// In practice, logs are commonly read by people so simple key-value logging is
+// used to provide a happy medium between human readable and machine parsable.
 package log
 
 import (
@@ -24,10 +30,12 @@ const (
 	LevelDebug
 )
 
-var globalLevel Level
+// GlobalLevel is set at init() time using the `LOG_LEVEL` env variable.
+// Misuse of this variable can lead to race conditions.
+var GlobalLevel Level
 
 func init() {
-	globalLevel = stringToLevel(strings.ToLower(os.Getenv("LOG_LEVEL")))
+	GlobalLevel = stringToLevel(strings.ToLower(os.Getenv("LOG_LEVEL")))
 	log.SetFlags(0)
 }
 
@@ -82,39 +90,39 @@ func stringToLevel(s string) Level {
 }
 
 func Debug(msg interface{}, kvs ...M) {
-	if globalLevel >= LevelDebug {
+	if GlobalLevel >= LevelDebug {
 		prnt(LevelDebug, msg, kvs...)
 	}
 }
 
 func Info(msg interface{}, kvs ...M) {
-	if globalLevel >= LevelInfo {
+	if GlobalLevel >= LevelInfo {
 		prnt(LevelInfo, msg, kvs...)
 
 	}
 }
 
 func Warn(msg interface{}, kvs ...M) {
-	if globalLevel >= LevelWarn {
+	if GlobalLevel >= LevelWarn {
 		prnt(LevelWarn, msg, kvs...)
 	}
 }
 
 func Error(msg interface{}, kvs ...M) {
-	if globalLevel >= LevelError {
+	if GlobalLevel >= LevelError {
 		prnt(LevelError, msg, kvs...)
 	}
 }
 
 func Fatal(msg interface{}, kvs ...M) {
-	if globalLevel >= LevelFatal {
+	if GlobalLevel >= LevelFatal {
 		prnt(LevelFatal, msg, kvs...)
 		os.Exit(1)
 	}
 }
 
 func Panic(msg interface{}, kvs ...M) {
-	if globalLevel >= LevelPanic {
+	if GlobalLevel >= LevelPanic {
 		prnt(LevelPanic, msg, kvs...)
 		panic(msg)
 	}
