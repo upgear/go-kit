@@ -14,11 +14,11 @@ import (
 func Redo(attempts int, c *http.Client, req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 
-	p := retry.Policy{Attempts: attempts, Sleep: time.Second, Factor: 2}
+	p := retry.Double(attempts)
 
 	nonReturnErr := errors.New("")
 
-	err := retry.Run(&p, func() error {
+	err := retry.Run(p, func() error {
 		var err error
 		resp, err = c.Do(req)
 		if err != nil {
@@ -27,7 +27,7 @@ func Redo(attempts int, c *http.Client, req *http.Request) (*http.Response, erro
 
 		if s := resp.StatusCode; s >= 500 || s == 420 || s == 429 {
 			// Respect `Retry-After` headers
-			alterPolicyFromRetryHeader(&p, resp.Header.Get("Retry-After"))
+			alterPolicyFromRetryHeader(p, resp.Header.Get("Retry-After"))
 
 			// Retry again
 			return nonReturnErr

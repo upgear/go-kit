@@ -8,7 +8,7 @@ import (
 	"github.com/upgear/go-kit/web"
 )
 
-func TestDoRetry(t *testing.T) {
+func TestRedo(t *testing.T) {
 	var i int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch i {

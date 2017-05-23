@@ -4,7 +4,10 @@
 // look at the web package.
 package retry
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 // Policy specifies how to execute Run(...).
 type Policy struct {
@@ -16,14 +19,14 @@ type Policy struct {
 	Factor int
 }
 
-// Double is a convenience function for calling Run with
-// Policy.Sleep = time.Second & Policy.Factor = 2.
-func Double(attempts int, f func() error) error {
-	return Run(&Policy{
+// Double is a convenience Policy which has a initial Sleep of 1 second and
+// doubles every subsequent attempt.
+func Double(attempts int) *Policy {
+	return &Policy{
 		Attempts: attempts,
 		Factor:   2,
 		Sleep:    time.Second,
-	}, f)
+	}
 }
 
 // Run executing a function until:
@@ -31,6 +34,9 @@ func Double(attempts int, f func() error) error {
 // - The max number of attempts has been reached
 // - A Stop() wrapped error is returned
 func Run(p *Policy, f func() error) error {
+	if p == nil {
+		return errors.New("policy must not be nil")
+	}
 	if err := f(); err != nil {
 		if _, ok := err.(stop); ok {
 			return err

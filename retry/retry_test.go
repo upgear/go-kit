@@ -36,19 +36,6 @@ func TestRunNil(t *testing.T) {
 	}
 }
 
-func TestDouble(t *testing.T) {
-	var i int
-
-	retry.Double(3, func() error {
-		i++
-		return errors.New("ut oh")
-	})
-
-	if exp := 3; i != exp {
-		t.Fatalf("expected exactly %v tries, got: %v", exp, i)
-	}
-}
-
 func TestStop(t *testing.T) {
 	var i int
 
