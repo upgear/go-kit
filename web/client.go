@@ -9,14 +9,16 @@ import (
 	"github.com/upgear/go-kit/retry"
 )
 
-func DoRetry(attempts int, c *http.Client, req *http.Request) (*http.Response, error) {
+// Redo acts the same as http.Client.Do except it retries for any errors
+// or status codes 420, 429, and 5XX.
+func Redo(attempts int, c *http.Client, req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 
 	p := retry.Policy{Attempts: attempts, Sleep: time.Second, Factor: 2}
 
 	nonReturnErr := errors.New("")
 
-	err := retry.Run(p, func() error {
+	err := retry.Run(&p, func() error {
 		var err error
 		resp, err = c.Do(req)
 		if err != nil {
@@ -47,8 +49,10 @@ func DoRetry(attempts int, c *http.Client, req *http.Request) (*http.Response, e
 }
 
 func alterPolicyFromRetryHeader(p *retry.Policy, h string) {
-	if x, err := strconv.Atoi(h); err != nil {
+	// Seconds Variation: `Retry-After: 120`
+	if x, err := strconv.ParseInt(h, 10, 64); err == nil {
 		p.Sleep = time.Duration(time.Duration(x) * time.Second)
 		return
 	}
+	// TODO: Implement Timestamp variation: `Retry-After: Fri, 31 Dec 1999 23:59:59 GMT`
 }
