@@ -30,7 +30,7 @@ func TestDoRetry(t *testing.T) {
 	}
 
 	const attempts = 3
-	resp, err := web.DoRetry(attempts, http.DefaultClient, req)
+	resp, err := web.Redo(attempts, http.DefaultClient, req)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -109,8 +110,9 @@ func (res Response) SendErr(status int, err error) {
 		log.Warn(err, log.M{"status": status})
 	}
 
+	fmt.Println("err", err)
 	res.Send(status, struct {
 		XMLName xml.Name `json:"-" xml:"error"`
-		Error   error    `json:"error" xml:"message"`
-	}{Error: err})
+		Error   string   `json:"error" xml:"message"`
+	}{Error: err.Error()})
 }
