@@ -28,6 +28,8 @@ var (
 
 	ContentTypeXML  = "application/xml"
 	ContentTypeJSON = "application/json"
+
+	ErrUnsupportedMediaType = errors.New(http.StatusText(http.StatusUnsupportedMediaType))
 )
 
 func init() {
@@ -39,6 +41,39 @@ func init() {
 	default:
 		ResponseTypePolicy = ContentTypePolicyJSONOrXML
 	}
+}
+
+// NewDecoder inspects the `Content-Type` header and either returns a
+// http.Request.Body wrapped JSON or XML Decoder. If the Content-Type is
+// not recognized it will return nil with `ErrUnsupportedMediaType`.
+func NewDecoder(r *http.Request) (Decoder, error) {
+	var d Decoder
+	h := r.Header.Get("Content-Type")
+	switch ResponseTypePolicy {
+	case ContentTypePolicyJSONOnly:
+		if !strings.Contains(h, "json") {
+			return nil, ErrUnsupportedMediaType
+		}
+		d = json.NewDecoder(r.Body)
+	case ContentTypePolicyXMLOnly:
+		if !strings.Contains(h, "xml") {
+			return nil, ErrUnsupportedMediaType
+		}
+		d = xml.NewDecoder(r.Body)
+	default:
+		if strings.Contains(h, "xml") {
+			d = xml.NewDecoder(r.Body)
+		} else if strings.Contains(h, "xml") {
+			d = json.NewDecoder(r.Body)
+		} else {
+			return nil, ErrUnsupportedMediaType
+		}
+	}
+	return d, nil
+}
+
+type Decoder interface {
+	Decode(interface{}) error
 }
 
 type encoder interface {
@@ -57,7 +92,7 @@ type Response struct {
 // NewResponse looks at the `Accept` header and returns an appropriate Response
 // struct.
 func NewResponse(w http.ResponseWriter, r *http.Request) Response {
-	ct, enc := fromAccept(w, r.Header.Get("Accept"))
+	ct, enc := headerToEncoder(w, r.Header.Get("Accept"))
 	return Response{
 		ContentType: ct,
 		encoder:     enc,
@@ -65,7 +100,7 @@ func NewResponse(w http.ResponseWriter, r *http.Request) Response {
 	}
 }
 
-func fromAccept(w http.ResponseWriter, accept string) (string, encoder) {
+func headerToEncoder(w http.ResponseWriter, accept string) (string, encoder) {
 	switch ResponseTypePolicy {
 	case ContentTypePolicyJSONOnly:
 		return ContentTypeJSON, json.NewEncoder(w)
