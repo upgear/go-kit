@@ -29,10 +29,10 @@ func Double(attempts int) *Policy {
 	}
 }
 
-// Run executing a function until:
-// - A nil error is returned
-// - The max number of attempts has been reached
-// - A Stop() wrapped error is returned
+// Run executes a function until:
+// 1. A nil error is returned,
+// 2. The max number of attempts has been reached,
+// 3. A Stop(...) wrapped error is returned
 func Run(p *Policy, f func() error) error {
 	if p == nil {
 		return errors.New("policy must not be nil")

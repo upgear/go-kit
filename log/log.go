@@ -39,7 +39,7 @@ func init() {
 	log.SetFlags(0)
 }
 
-// M is a convenience map type to prevent more typing (pun intended)
+// M is a convenience type for a map to save typing (pun intended).
 type M map[string]interface{}
 
 func (kv M) String() string {
@@ -52,7 +52,7 @@ func (kv M) String() string {
 
 type Level uint8
 
-// Convert the Level to a string. E.g. PanicLevel becomes "panic".
+// Convert the Level to a string. For example: PanicLevel becomes "panic".
 func (level Level) String() string {
 	switch level {
 	case LevelDebug:

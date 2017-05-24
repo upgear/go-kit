@@ -1,26 +1,29 @@
 package web
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/upgear/go-kit/retry"
 )
 
-// Redo acts the same as http.Client.Do except it retries for any errors
+var Err4XX = errors.New("4XX: client error")
+var Err5XX = errors.New("5XX: server error")
+
+// DoRetry acts the same as http.Client.Do except it retries for any errors
 // or status codes 420, 429, and 5XX.
-func Redo(attempts int, c *http.Client, req *http.Request) (*http.Response, error) {
+// Any 4XX or 5XX statuses will return an error with a non-nil response value.
+func DoRetry(c *http.Client, r *http.Request, attempts int) (*http.Response, error) {
 	var resp *http.Response
 
 	p := retry.Double(attempts)
 
-	nonReturnErr := errors.New("")
-
 	err := retry.Run(p, func() error {
 		var err error
-		resp, err = c.Do(req)
+		resp, err = c.Do(r)
 		if err != nil {
 			return err
 		}
@@ -30,22 +33,20 @@ func Redo(attempts int, c *http.Client, req *http.Request) (*http.Response, erro
 			alterPolicyFromRetryHeader(p, resp.Header.Get("Retry-After"))
 
 			// Retry again
-			return nonReturnErr
+			if s >= 500 {
+				return Err5XX
+			} else {
+				return Err4XX
+			}
 		} else if s >= 400 {
 			// Don't retry
-			return retry.Stop(nonReturnErr)
+			return retry.Stop(Err4XX)
 		}
 
 		return err
 	})
 
-	switch err {
-	// Don't return errors http.Client.Do would not return
-	case nonReturnErr, retry.Stop(nonReturnErr):
-		return resp, nil
-	default:
-		return resp, err
-	}
+	return resp, err
 }
 
 func alterPolicyFromRetryHeader(p *retry.Policy, h string) {
@@ -55,4 +56,29 @@ func alterPolicyFromRetryHeader(p *retry.Policy, h string) {
 		return
 	}
 	// TODO: Implement Timestamp variation: `Retry-After: Fri, 31 Dec 1999 23:59:59 GMT`
+}
+
+// DoUnmarshal makes an http request and attempts to unmarshal the response.
+// Any 4XX or 5XX statuses will return an error with a non-nil response value.
+//
+// It will attempt to unmarshal any 2XX responses and close the
+// http.Response.Body.
+func DoUnmarshal(c *http.Client, r *http.Request, x interface{}) (*http.Response, error) {
+	resp, err := c.Do(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if s := resp.StatusCode; s >= 500 {
+		return resp, Err5XX
+	} else if s >= 400 {
+		return resp, Err4XX
+	}
+
+	defer resp.Body.Close()
+	if err := ResponseDecoder(resp).Decode(x); err != nil {
+		return nil, errors.Wrap(err, "unable to decode response")
+	}
+
+	return resp, nil
 }
