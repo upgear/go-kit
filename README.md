@@ -6,10 +6,11 @@ We are building this kit in a pragmatic manner: As we start to notice repetition
 
 **This library is opinionated in order to provide standardization, e.g:**
 
-Logging: Whitespace-separated key/value pairs (i.e: `a=b c=d`)
-Configuration: Environment variables
+- Logging: Whitespace-separated key/value pairs (no JSON option)
+- Configuration: Environment variables are used to initialize global options
 
-Design Goals:
+**Design Goals:**
+
 - Standardization over configuration
 - Simplicity over all else (perfomance, versatility)
 
