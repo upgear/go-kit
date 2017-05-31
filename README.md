@@ -1,5 +1,7 @@
 # Upgear's Go Kit
 
+**Currently under heavy development: Make sure to vendor.**
+
 This is a collection of Go libraries that we use on most projects at upgear.
 
 We are building this kit in a pragmatic manner: As we start to notice repetition across our codebase, we consider moving the commonalities into this kit.
