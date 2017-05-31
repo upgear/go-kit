@@ -116,8 +116,8 @@ func TestDoUnmarshal5XX(t *testing.T) {
 	if err != web.Err5XX {
 		t.Fatalf("expected Err5XX, got: %s", err)
 	}
-	if got := resp.StatusCode; got != 500 {
-		t.Fatalf("expceted status code %v, got: %v", 500, got)
+	if resp != nil {
+		t.Fatal("expected nil response variable")
 	}
 }
 
@@ -135,7 +135,7 @@ func TestDoRetry5XX(t *testing.T) {
 	if err != web.Err5XX {
 		t.Fatalf("expected Err5XX, got: %s", err)
 	}
-	if got := resp.StatusCode; got != 500 {
-		t.Fatalf("expceted status code %v, got: %v", 500, got)
+	if resp != nil {
+		t.Fatal("expected nil response variable")
 	}
 }

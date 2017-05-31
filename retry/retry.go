@@ -38,8 +38,9 @@ func Run(p *Policy, f func() error) error {
 		return errors.New("policy must not be nil")
 	}
 	if err := f(); err != nil {
-		if _, ok := err.(stop); ok {
-			return err
+		if s, ok := err.(stop); ok {
+			// Return the original error for later checking
+			return s.error
 		}
 
 		p.Attempts = p.Attempts - 1
