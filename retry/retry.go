@@ -6,8 +6,13 @@ package retry
 
 import (
 	"errors"
+	"math/rand"
 	"time"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Policy specifies how to execute Run(...).
 type Policy struct {
@@ -45,6 +50,10 @@ func Run(p *Policy, f func() error) error {
 
 		p.Attempts = p.Attempts - 1
 		if p.Attempts > 0 {
+			// Add some randomness to prevent creating a Thundering Herd
+			jitter := time.Duration(rand.Int63n(int64(p.Sleep)))
+			p.Sleep = p.Sleep + jitter/time.Duration(p.Factor)
+
 			time.Sleep(p.Sleep)
 			p.Sleep = time.Duration(p.Factor) * p.Sleep
 			return Run(p, f)
