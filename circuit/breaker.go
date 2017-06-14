@@ -8,6 +8,8 @@ import (
 
 var ErrBreakerOpen = errors.New("breaker open")
 
+// NewBreaker creates an instance of Breaker with a given threshold and
+// timeout.
 func NewBreaker(threshold int64, timeout time.Duration) *Breaker {
 	return &Breaker{
 		Threshold: threshold,
@@ -15,6 +17,8 @@ func NewBreaker(threshold int64, timeout time.Duration) *Breaker {
 	}
 }
 
+// Breaker maintains the state of the circuit breaker. It tracks consecutive
+// failures and the last failure timestamp.
 type Breaker struct {
 	// Threshold is the number of times consecutive failures may occur
 	// before the breaker gets flipped.
@@ -31,6 +35,8 @@ type Breaker struct {
 	timestamp int64
 }
 
+// Run a function and return the result or simply return an ErrBreakerOpen
+// if the threshold for consecutive failures has been reached.
 func (b *Breaker) Run(f func() error) error {
 	if !b.allowed() {
 		return ErrBreakerOpen
@@ -49,6 +55,8 @@ func (b *Breaker) Run(f func() error) error {
 	return nil
 }
 
+// Ignore wraps an error returned by a function invoked in Run. It will ensure
+// the error is not added to the failure count.
 func Ignore(err error) error {
 	return ignore{err}
 }
