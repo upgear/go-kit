@@ -1,3 +1,4 @@
+// Package circuit provides simple circuit breaker functionality.
 package circuit
 
 import (
