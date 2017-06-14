@@ -5,7 +5,6 @@
 package retry
 
 import (
-	"errors"
 	"math/rand"
 	"time"
 )
@@ -38,10 +37,7 @@ func Double(attempts int) *Policy {
 // 1. A nil error is returned,
 // 2. The max number of attempts has been reached,
 // 3. A Stop(...) wrapped error is returned
-func Run(p *Policy, f func() error) error {
-	if p == nil {
-		return errors.New("policy must not be nil")
-	}
+func (p *Policy) Run(f func() error) error {
 	if err := f(); err != nil {
 		if s, ok := err.(stop); ok {
 			// Return the original error for later checking
@@ -56,7 +52,7 @@ func Run(p *Policy, f func() error) error {
 
 			time.Sleep(p.Sleep)
 			p.Sleep = time.Duration(p.Factor) * p.Sleep
-			return Run(p, f)
+			return p.Run(f)
 		}
 		return err
 	}

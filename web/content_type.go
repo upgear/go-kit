@@ -3,10 +3,8 @@ package web
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -18,30 +16,18 @@ type ContentType string
 
 const (
 	ContentTypePolicyJSONOrXML = ContentTypePolicy(iota)
-	ContentTypePolicyJSONOnly
-	ContentTypePolicyXMLOnly
+	ContentTypePolicyJSON
+	ContentTypePolicyXML
 )
 
 var (
 	// GlobalContentTypePolicy is a global variable that should not be changed
-	// while handlers are active. It defaults to ContentTypePolicyJSONOrXML
-	// but is set at init() time using the `HTTP_CONTENT_TYPE` env variable.
-	GlobalContentTypePolicy ContentTypePolicy
+	// while handlers are active. It defaults to ContentTypePolicyJSON.
+	GlobalContentTypePolicy = ContentTypePolicyJSON
 
 	ContentTypeXML  = ContentType("application/xml")
 	ContentTypeJSON = ContentType("application/json")
 )
-
-func init() {
-	switch strings.ToLower(os.Getenv("HTTP_CONTENT_TYPE")) {
-	case "json":
-		GlobalContentTypePolicy = ContentTypePolicyJSONOnly
-	case "xml":
-		GlobalContentTypePolicy = ContentTypePolicyXMLOnly
-	default:
-		GlobalContentTypePolicy = ContentTypePolicyJSONOrXML
-	}
-}
 
 type Decoder interface {
 	Decode(interface{}) error
@@ -87,9 +73,9 @@ func ResponseEncoder(w http.ResponseWriter) Encoder {
 
 func jsonOrXML(h string) ContentType {
 	switch GlobalContentTypePolicy {
-	case ContentTypePolicyJSONOnly:
+	case ContentTypePolicyJSON:
 		return ContentTypeJSON
-	case ContentTypePolicyXMLOnly:
+	case ContentTypePolicyXML:
 		return ContentTypeXML
 	default:
 		if strings.Contains(h, "xml") {
@@ -134,7 +120,6 @@ func Error(w http.ResponseWriter, err error, status int) {
 		log.Warn(err, log.M{"status": status})
 	}
 
-	fmt.Println("err", err)
 	Respond(
 		w,
 		struct {

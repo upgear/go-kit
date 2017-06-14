@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/upgear/go-kit/web"
 )
 
-func TestDoRetry(t *testing.T) {
+func TestDo(t *testing.T) {
 	var i int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch i {
@@ -34,7 +35,7 @@ func TestDoRetry(t *testing.T) {
 	start := time.Now()
 
 	const attempts = 3
-	resp, err := web.DoRetry(http.DefaultClient, req, attempts)
+	resp, err := web.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +69,7 @@ func TestDoUnmarshalJSON(t *testing.T) {
 		ABC int `json:"abc" xml:"-"`
 	}
 
-	if _, err := web.DoUnmarshal(http.DefaultClient, req, &response); err != nil {
+	if _, err := web.DoUnmarshal(req, &response); err != nil {
 		t.Fatal(err)
 	}
 
@@ -78,6 +79,12 @@ func TestDoUnmarshalJSON(t *testing.T) {
 }
 
 func TestDoUnmarshalXML(t *testing.T) {
+	orgCTP := web.GlobalContentTypePolicy
+	web.GlobalContentTypePolicy = web.ContentTypePolicyJSONOrXML
+	defer func() {
+		web.GlobalContentTypePolicy = orgCTP
+	}()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		w.Write([]byte(`<response><abc>123</abc></response>`))
@@ -92,7 +99,7 @@ func TestDoUnmarshalXML(t *testing.T) {
 		ABC int `json:"-" xml:"abc"`
 	}
 
-	if _, err := web.DoUnmarshal(http.DefaultClient, req, &response); err != nil {
+	if _, err := web.DoUnmarshal(req, &response); err != nil {
 		t.Fatal(err)
 	}
 
@@ -104,6 +111,7 @@ func TestDoUnmarshalXML(t *testing.T) {
 func TestDoUnmarshal5XX(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
+		w.Write([]byte(`{"ut":"oh"}`))
 	}))
 
 	req, err := http.NewRequest("GET", ts.URL, nil)
@@ -112,8 +120,8 @@ func TestDoUnmarshal5XX(t *testing.T) {
 	}
 
 	var response struct{}
-	resp, err := web.DoUnmarshal(http.DefaultClient, req, response)
-	if err != web.Err5XX {
+	resp, err := web.DoUnmarshal(req, response)
+	if errors.Cause(err) != web.Err5XX {
 		t.Fatalf("expected Err5XX, got: %s", err)
 	}
 	if resp != nil {
@@ -121,7 +129,7 @@ func TestDoUnmarshal5XX(t *testing.T) {
 	}
 }
 
-func TestDoRetry5XX(t *testing.T) {
+func TestDo5XX(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 	}))
@@ -131,8 +139,8 @@ func TestDoRetry5XX(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := web.DoRetry(http.DefaultClient, req, 3)
-	if err != web.Err5XX {
+	resp, err := web.Do(req)
+	if errors.Cause(err) != web.Err5XX {
 		t.Fatalf("expected Err5XX, got: %s", err)
 	}
 	if resp != nil {

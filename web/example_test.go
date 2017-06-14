@@ -16,7 +16,7 @@ func Example_DoRetry() {
 	}
 
 	// Try to 3 times to get a 2XX back
-	resp, err := web.DoRetry(http.DefaultClient, req, 3)
+	resp, err := web.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func Example_DoUnmarshal() {
 		ABC int `json:"abc" xml:"abc"`
 	}
 
-	if _, err := web.DoUnmarshal(http.DefaultClient, req, &response); err != nil {
+	if _, err := web.DoUnmarshal(req, &response); err != nil {
 		log.Fatal(err)
 	}
 
@@ -41,6 +41,8 @@ func Example_DoUnmarshal() {
 }
 
 func Example_handler() {
+	web.GlobalContentTypePolicy = web.ContentTypePolicyJSONOrXML
+
 	http.ListenAndServe(":8080", web.Logware(web.Contentware(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var request struct {

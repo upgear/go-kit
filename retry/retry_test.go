@@ -11,7 +11,7 @@ import (
 func TestRun(t *testing.T) {
 	var i int
 
-	retry.Run(&retry.Policy{Attempts: 3, Sleep: time.Nanosecond, Factor: 2},
+	(&retry.Policy{Attempts: 3, Sleep: time.Nanosecond, Factor: 2}).Run(
 		func() error {
 			i++
 			return errors.New("ut oh")
@@ -25,7 +25,7 @@ func TestRun(t *testing.T) {
 func TestRunNil(t *testing.T) {
 	var i int
 
-	retry.Run(&retry.Policy{Attempts: 3, Sleep: time.Nanosecond, Factor: 2},
+	(&retry.Policy{Attempts: 3, Sleep: time.Nanosecond, Factor: 2}).Run(
 		func() error {
 			i++
 			return nil
@@ -39,7 +39,7 @@ func TestRunNil(t *testing.T) {
 func TestStop(t *testing.T) {
 	var i int
 
-	retry.Run(&retry.Policy{Attempts: 3, Sleep: time.Nanosecond, Factor: 2},
+	(&retry.Policy{Attempts: 3, Sleep: time.Nanosecond, Factor: 2}).Run(
 		func() error {
 			i++
 			return retry.Stop(errors.New("ut oh"))

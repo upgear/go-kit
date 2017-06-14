@@ -12,7 +12,7 @@ import (
 func Example() {
 	var resp *http.Response
 
-	err := retry.Run(retry.Double(3), func() error {
+	err := retry.Double(3).Run(func() error {
 		var err error
 		resp, err = http.Get("https://golang.org")
 		return err
@@ -27,7 +27,7 @@ func Example() {
 }
 
 func Example_stop() {
-	retry.Run(retry.Double(3), func() error {
+	retry.Double(3).Run(func() error {
 		err := errors.New("no more retries after this error")
 
 		return retry.Stop(err)
