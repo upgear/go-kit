@@ -10,13 +10,13 @@ import (
 )
 
 func Example_DoRetry() {
-	req, err := http.NewRequest("GET", "https://golang.org", nil)
+	req, err := http.NewRequest("GET", "https://some-api", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Try to 3 times to get a 2XX back
-	resp, err := web.Do(req)
+	resp, err := web.DefaultClient().Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func Example_DoRetry() {
 }
 
 func Example_DoUnmarshal() {
-	req, err := http.NewRequest("GET", "https://golang.org", nil)
+	req, err := http.NewRequest("GET", "https://some-api", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func Example_DoUnmarshal() {
 		ABC int `json:"abc" xml:"abc"`
 	}
 
-	if _, err := web.DoUnmarshal(req, &response); err != nil {
+	if _, err := web.DefaultClient().DoUnmarshal(req, &response); err != nil {
 		log.Fatal(err)
 	}
 

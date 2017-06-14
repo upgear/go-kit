@@ -9,43 +9,47 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/upgear/go-kit/circuit"
 	"github.com/upgear/go-kit/retry"
 )
 
 var Err4XX = errors.New("4XX client error")
 var Err5XX = errors.New("5XX server error")
 
-var DefaultClient = Client{
-	HTTPClient: &http.Client{
-		Timeout: 10 * time.Second,
-	},
-	RetryPolicy: retry.Double(3),
-}
-
-func Do(r *http.Request) (*http.Response, error) {
-	return DefaultClient.Do(r)
-}
-
-func DoUnmarshal(r *http.Request, x interface{}) (*http.Response, error) {
-	return DefaultClient.DoUnmarshal(r, x)
+func DefaultClient() *Client {
+	return &Client{
+		HTTPClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		RetryPolicy:    retry.Double(3),
+		CircuitBreaker: circuit.NewBreaker(100, time.Second),
+	}
 }
 
 type Client struct {
-	HTTPClient  *http.Client
+	HTTPClient *http.Client
+	// RetryPolicy can be nil and a zero'd retry policy (aka 1 try will be used)
 	RetryPolicy *retry.Policy
+	// CircuitBreaker can be nil and it will be ignored.
+	CircuitBreaker *circuit.Breaker
 }
 
 // Do acts the same as http.Client.Do except it retries for any errors
 // or status codes 420, 429, and 5XX.
 // Any 4XX or 5XX statuses will return an error with a nil response value.
 func (c *Client) Do(r *http.Request) (*http.Response, error) {
-	return c.doRetry(r, *c.RetryPolicy)
+	p := c.RetryPolicy
+	if p == nil {
+		p = &retry.Policy{}
+	}
+	return c.do(r, *p, c.CircuitBreaker)
 }
 
-func (c *Client) doRetry(r *http.Request, p retry.Policy) (*http.Response, error) {
+func (c *Client) do(r *http.Request, p retry.Policy, b *circuit.Breaker) (*http.Response, error) {
 	var resp *http.Response
 
-	err := p.Run(func() error {
+	// Define a function which maps http status codes to errors
+	doHTTP := func() error {
 		var err error
 		resp, err = c.HTTPClient.Do(r)
 		if err != nil {
@@ -65,7 +69,23 @@ func (c *Client) doRetry(r *http.Request, p retry.Policy) (*http.Response, error
 		default: // Success
 			return nil
 		}
-	})
+	}
+
+	fn := doHTTP
+
+	// Wrap the function in a circuit breaker if one is defined
+	if b != nil {
+		fn = func() error {
+			err := doHTTP()
+			// Don't trip on client errors
+			if errors.Cause(err) == Err4XX {
+				err = circuit.Ignore(err)
+			}
+			return err
+		}
+	}
+
+	err := p.Run(fn)
 
 	if errors.Cause(err) == Err4XX || errors.Cause(err) == Err5XX {
 		defer resp.Body.Close()

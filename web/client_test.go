@@ -10,6 +10,28 @@ import (
 	"github.com/upgear/go-kit/web"
 )
 
+func TestNewClient(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))
+
+	c := web.Client{
+		HTTPClient: &http.Client{},
+	}
+
+	req, err := http.NewRequest("GET", ts.URL, nil)
+	if err != nil {
+		t.Fatalf("unable to make request: %s", err)
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatal("expected nil error")
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected %v status code got: %v", 200, resp.StatusCode)
+	}
+}
+
 func TestDo(t *testing.T) {
 	var i int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +57,7 @@ func TestDo(t *testing.T) {
 	start := time.Now()
 
 	const attempts = 3
-	resp, err := web.Do(req)
+	resp, err := web.DefaultClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +91,7 @@ func TestDoUnmarshalJSON(t *testing.T) {
 		ABC int `json:"abc" xml:"-"`
 	}
 
-	if _, err := web.DoUnmarshal(req, &response); err != nil {
+	if _, err := web.DefaultClient().DoUnmarshal(req, &response); err != nil {
 		t.Fatal(err)
 	}
 
@@ -99,7 +121,7 @@ func TestDoUnmarshalXML(t *testing.T) {
 		ABC int `json:"-" xml:"abc"`
 	}
 
-	if _, err := web.DoUnmarshal(req, &response); err != nil {
+	if _, err := web.DefaultClient().DoUnmarshal(req, &response); err != nil {
 		t.Fatal(err)
 	}
 
@@ -120,7 +142,7 @@ func TestDoUnmarshal5XX(t *testing.T) {
 	}
 
 	var response struct{}
-	resp, err := web.DoUnmarshal(req, response)
+	resp, err := web.DefaultClient().DoUnmarshal(req, response)
 	if errors.Cause(err) != web.Err5XX {
 		t.Fatalf("expected Err5XX, got: %s", err)
 	}
@@ -139,7 +161,7 @@ func TestDo5XX(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp, err := web.Do(req)
+	resp, err := web.DefaultClient().Do(req)
 	if errors.Cause(err) != web.Err5XX {
 		t.Fatalf("expected Err5XX, got: %s", err)
 	}
