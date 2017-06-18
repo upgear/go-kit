@@ -1,6 +1,7 @@
 package retry_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -47,5 +48,22 @@ func TestStop(t *testing.T) {
 
 	if exp := 1; i != exp {
 		t.Fatalf("expected exactly %v tries, got: %v", exp, i)
+	}
+}
+
+func TestWithContext(t *testing.T) {
+	fn := func() error {
+		// Hang
+		<-make(chan struct{})
+		return nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := retry.Double(3).Run(retry.WithContext(ctx, fn))
+
+	if err != context.Canceled {
+		t.Fatalf("expected err %q, got: %q", context.Canceled, err)
 	}
 }

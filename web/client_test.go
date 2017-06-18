@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -167,5 +168,31 @@ func TestDo5XX(t *testing.T) {
 	}
 	if resp != nil {
 		t.Fatal("expected nil response variable")
+	}
+}
+
+func TestDoCancelContext(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Hang
+		<-make(chan struct{})
+	}))
+
+	req, err := http.NewRequest("GET", ts.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+
+	cancel()
+
+	resp, err := web.DefaultClient().Do(req)
+
+	if err != context.Canceled {
+		t.Fatalf("expected err %q, got: %q", context.Canceled, err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil response")
 	}
 }

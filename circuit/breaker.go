@@ -48,11 +48,12 @@ func (b *Breaker) Run(f func() error) error {
 			return e
 		}
 
-		b.fail()
+		atomic.AddInt64(&b.failures, 1)
+		b.setTimer()
 		return err
 	}
 
-	b.succeed()
+	atomic.StoreInt64(&b.failures, 0)
 	return nil
 }
 
@@ -82,15 +83,6 @@ func (b *Breaker) allowed() bool {
 	return true
 }
 
-func (b *Breaker) fail() {
-	atomic.AddInt64(&b.failures, 1)
-	b.setTimer()
-}
-
 func (b *Breaker) setTimer() {
 	atomic.StoreInt64(&b.timestamp, time.Now().UnixNano())
-}
-
-func (b *Breaker) succeed() {
-	atomic.StoreInt64(&b.failures, 0)
 }

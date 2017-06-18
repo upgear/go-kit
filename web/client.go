@@ -16,6 +16,9 @@ import (
 var Err4XX = errors.New("4XX client error")
 var Err5XX = errors.New("5XX server error")
 
+// DefaultClient is a function rather than a var (as in the http pkg) because
+// it includes a circuit breaker so it should not be used as a client for
+// multiple services.
 func DefaultClient() *Client {
 	return &Client{
 		HTTPClient: &http.Client{
@@ -26,6 +29,11 @@ func DefaultClient() *Client {
 	}
 }
 
+// Client wraps http.Client while adding retry and circuit breaker
+// functionality. Because it has an embedded circuit breaker, a single
+// Client (with a non-nil CircuitBreaker) should not be used to connect to
+// multiple services. A failure in one service would trip the breaker for other
+// services.
 type Client struct {
 	HTTPClient *http.Client
 	// RetryPolicy can be nil and a zero'd retry policy (aka 1 try will be used)
@@ -85,14 +93,17 @@ func (c *Client) do(r *http.Request, p retry.Policy, b *circuit.Breaker) (*http.
 		}
 	}
 
-	err := p.Run(fn)
+	err := p.Run(retry.WithContext(r.Context(), fn))
 
 	if errors.Cause(err) == Err4XX || errors.Cause(err) == Err5XX {
 		defer resp.Body.Close()
 		return nil, wrapErrBody(err, resp.Body)
 	}
+	if err != nil {
+		return nil, err
+	}
 
-	return resp, err
+	return resp, nil
 }
 
 // DoUnmarshal makes an http request and attempts to unmarshal the response.
@@ -121,6 +132,8 @@ func (c *Client) DoUnmarshal(r *http.Request, x interface{}) (*http.Response, er
 	return resp, nil
 }
 
+// alterPolicyFromRetryHeader adjusts a retry policy's sleep duration
+// based on headers sent back from a server.
 func alterPolicyFromRetryHeader(p *retry.Policy, h string) {
 	// Seconds Variation: `Retry-After: 120`
 	if x, err := strconv.ParseInt(h, 10, 64); err == nil {

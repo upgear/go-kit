@@ -5,12 +5,22 @@
 package retry
 
 import (
+	"context"
 	"math/rand"
 	"time"
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+// Stop wraps an error returned by a retry func and stops subsequent retries.
+func Stop(err error) error {
+	return stop{err}
+}
+
+type stop struct {
+	error
 }
 
 // Policy specifies how to execute Run(...).
@@ -46,12 +56,7 @@ func (p *Policy) Run(f func() error) error {
 
 		p.Attempts = p.Attempts - 1
 		if p.Attempts > 0 {
-			// Add some randomness to prevent creating a Thundering Herd
-			jitter := time.Duration(rand.Int63n(int64(p.Sleep)))
-			p.Sleep = p.Sleep + jitter/time.Duration(p.Factor)
-
-			time.Sleep(p.Sleep)
-			p.Sleep = time.Duration(p.Factor) * p.Sleep
+			p.sleep()
 			return p.Run(f)
 		}
 		return err
@@ -60,11 +65,28 @@ func (p *Policy) Run(f func() error) error {
 	return nil
 }
 
-// Stop wraps an error returned by a retry func and stops subsequent retries.
-func Stop(err error) error {
-	return stop{err}
+// WithContext wraps the run function in a way that cancelling the context will
+// return a Stop(err) or the function will execute and return its usual error.
+func WithContext(ctx context.Context, f func() error) func() error {
+	return func() error {
+		c := make(chan error, 1)
+
+		go func() { c <- f() }()
+
+		select {
+		case <-ctx.Done():
+			return Stop(ctx.Err())
+		case err := <-c:
+			return err
+		}
+	}
 }
 
-type stop struct {
-	error
+func (p *Policy) sleep() {
+	// Add some randomness to prevent creating a Thundering Herd
+	jitter := time.Duration(rand.Int63n(int64(p.Sleep)))
+	p.Sleep = p.Sleep + jitter/time.Duration(p.Factor)
+
+	time.Sleep(p.Sleep)
+	p.Sleep = time.Duration(p.Factor) * p.Sleep
 }
