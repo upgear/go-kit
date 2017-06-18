@@ -42,9 +42,12 @@ type Client struct {
 	CircuitBreaker *circuit.Breaker
 }
 
-// Do acts the same as http.Client.Do except it retries for any errors
-// or status codes 420, 429, and 5XX.
-// Any 4XX or 5XX statuses will return an error with a nil response value.
+// Do acts the same as http.Client.Do except:
+//
+// - It retries for any errors or status codes 420, 429, and 5XX.
+// - Circuit breaker functionality can be configured.
+// - 4XX or 5XX statuses will return an error with a nil response value.
+//
 func (c *Client) Do(r *http.Request) (*http.Response, error) {
 	p := c.RetryPolicy
 	if p == nil {

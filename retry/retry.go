@@ -65,8 +65,9 @@ func (p *Policy) Run(f func() error) error {
 	return nil
 }
 
-// WithContext wraps the run function in a way that cancelling the context will
-// return a Stop(err) or the function will execute and return its usual error.
+// WithContext wraps a run function with a function that will return early
+// if the context is done. In such a case Stop(ctx.Err()) is returned rather
+// than the function's return value.
 func WithContext(ctx context.Context, f func() error) func() error {
 	return func() error {
 		c := make(chan error, 1)
