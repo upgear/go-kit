@@ -122,12 +122,6 @@ func (c *Client) DoUnmarshal(r *http.Request, x interface{}) (*http.Response, er
 	}
 	defer resp.Body.Close()
 
-	if s := resp.StatusCode; s >= 500 {
-		return nil, wrapErrBody(wrapErrStatus(Err5XX, s), resp.Body)
-	} else if s >= 400 {
-		return nil, wrapErrBody(wrapErrStatus(Err4XX, s), resp.Body)
-	}
-
 	if err := ResponseDecoder(resp).Decode(x); err != nil {
 		return nil, errors.Wrap(err, "unable to decode response")
 	}
